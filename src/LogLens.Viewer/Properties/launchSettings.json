@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "LogLens.Viewer": {
+      "commandName": "Project",
+      "applicationUrl": "http://localhost:5341",
+      "launchBrowser": false,
+      "environmentVariables": { "ASPNETCORE_ENVIRONMENT": "Production" }
+    }
+  }
+}

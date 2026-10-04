@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/LogLens.Sample/LogLens.Sample.csproj" />
+    <Project Path="samples/LogLens.SerilogDemo/LogLens.SerilogDemo.csproj" />
+    <Project Path="samples/LogLens.UploadDemo/LogLens.UploadDemo.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/LogLens.Extensions.Logging/LogLens.Extensions.Logging.csproj" />
+    <Project Path="src/LogLens.Sinks.Http/LogLens.Sinks.Http.csproj" />
+    <Project Path="src/LogLens.Viewer/LogLens.Viewer.csproj" />
+    <Project Path="src/LogLens/LogLens.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LogLens.Tests/LogLens.Tests.csproj" />
+    <Project Path="tests/LogLens.Viewer.Tests/LogLens.Viewer.Tests.csproj" />
+  </Folder>
+</Solution>

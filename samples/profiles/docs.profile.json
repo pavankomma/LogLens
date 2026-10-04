@@ -1,0 +1,24 @@
+{
+  // Domain profile for a document-processing product (works with samples/LogLens.UploadDemo).
+  // Run: loglens --profile samples/profiles/docs.profile.json
+  "name": "Docs",
+  "entities": {
+    "DocumentId": { "label": "Document", "link": "https://app.example.com/documents/{value}" },
+    "TenantId": { "label": "Tenant" },
+    "StorageKey": { "label": "File", "link": "https://storage.example.com/{value}" },
+    "UserId": { "label": "User" }
+  },
+  "quickViews": [
+    { "name": "Failed uploads", "query": "level:error has:DocumentId" },
+    { "name": "Quarantined", "query": "ScanResult=infected" },
+    { "name": "OCR retries", "query": "message:retry category:*" },
+    { "name": "Slow (>500 ms)", "query": "Elapsed>500" }
+  ],
+  "redact": [ "Sha256" ],
+  "keys": {
+    "identity": [ "UserId", "TenantId" ],
+    "duration": [ "Elapsed" ],
+    "route": [ "StorageKey" ],
+    "correlation": [ "DocumentId", "TraceId" ]
+  }
+}

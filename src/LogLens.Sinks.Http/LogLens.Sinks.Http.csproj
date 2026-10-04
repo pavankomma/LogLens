@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.0</TargetFrameworks>
+    <RootNamespace>LogLens.Sinks.Http</RootNamespace>
+    <PackageId>LogLens.Sinks.Http</PackageId>
+    <Description>HTTP sink for LogLens: batches events as NDJSON to LogLens.Viewer or any compatible endpoint.</Description>
+    <PackageTags>logging;logger;http;viewer</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" Condition="'$(GITHUB_ACTIONS)' == 'true'" />
+    <ProjectReference Include="../LogLens/LogLens.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LogLens.Viewer.Tests" />
+  </ItemGroup>
+</Project>

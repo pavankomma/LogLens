@@ -1,0 +1,113 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>LogLens.Viewer</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>loglens</ToolCommandName>
+    <PackageId>LogLens.Viewer</PackageId>
+    <Description>Self-hosted log explorer for LogLens, Serilog (Seq-compatible ingestion) and NDJSON files: search, facets, histogram, live tail.</Description>
+    <PackageTags>logging;log-viewer;serilog;seq;structured-logging</PackageTags>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <NoWarn>$(NoWarn);CA1515;CA1812;CA1852</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <ProjectReference Include="../LogLens/LogLens.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
+    <!--
+      Microsoft.AspNetCore.OpenApi pulls Microsoft.OpenApi 2.0.0 transitively, which carries a
+      high-severity advisory (GHSA-v5pm-xwqc-g5wc). Warnings-as-errors turns NU1903 into a build
+      failure, which is the behaviour we want — so pin the fixed version forward (see
+      Directory.Packages.props) rather than silence the check. Drop this reference once the
+      ASP.NET package's own floor moves past it.
+    -->
+    <PackageReference Include="Microsoft.OpenApi" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LogLens.Viewer.Tests" />
+  </ItemGroup>
+
+  <!--
+    ============================================================================
+    Client app (Vue 3 + TypeScript, built by Vite from ClientApp/ into wwwroot/).
+
+    Node is *not* a hard requirement for building this project. A machine with node rebuilds the
+    client; a machine without one uses the committed wwwroot output and gets a warning. That is why
+    wwwroot is committed rather than ignored: a viewer whose UI silently disappears on a build
+    agent that happens to lack node is a worse trade than some generated files in the tree.
+
+    Set -p:SkipClientBuild=true to skip it deliberately — useful in a tight C#-only edit loop.
+    ============================================================================
+  -->
+  <PropertyGroup>
+    <ClientAppDir>$(MSBuildProjectDirectory)\ClientApp</ClientAppDir>
+    <ClientBuildStamp>$(ClientAppDir)\node_modules\.loglens-build-stamp</ClientBuildStamp>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Anything that changes the bundle. Excludes generated and installed trees. -->
+    <ClientAppInput Include="$(ClientAppDir)\src\**\*" Exclude="$(ClientAppDir)\src\**\*.tsbuildinfo" />
+    <ClientAppInput Include="$(ClientAppDir)\index.html" />
+    <ClientAppInput Include="$(ClientAppDir)\package.json" />
+    <ClientAppInput Include="$(ClientAppDir)\package-lock.json" />
+    <ClientAppInput Include="$(ClientAppDir)\vite.config.ts" />
+    <ClientAppInput Include="$(ClientAppDir)\tsconfig*.json" />
+  </ItemGroup>
+
+  <Target Name="DetectNode">
+    <Exec Command="node --version"
+          ContinueOnError="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low">
+      <Output TaskParameter="ExitCode" PropertyName="NodeExitCode" />
+    </Exec>
+    <PropertyGroup>
+      <HasNode Condition="'$(NodeExitCode)' == '0'">true</HasNode>
+    </PropertyGroup>
+  </Target>
+
+  <!-- npm ci only when the lockfile has moved; it is far too slow to run every build. -->
+  <Target Name="RestoreClientApp"
+          DependsOnTargets="DetectNode"
+          Condition="'$(SkipClientBuild)' != 'true' AND '$(HasNode)' == 'true'"
+          Inputs="$(ClientAppDir)\package-lock.json"
+          Outputs="$(ClientAppDir)\node_modules\.package-lock.json">
+    <Message Importance="high" Text="LogLens: installing client dependencies…" />
+    <Exec Command="npm ci --no-audit --no-fund" WorkingDirectory="$(ClientAppDir)" />
+  </Target>
+
+  <!--
+    DetectNode is listed explicitly, not just reached through RestoreClientApp. MSBuild does not run
+    a target's DependsOnTargets when that target's own Condition is false, and RestoreClientApp's
+    condition tests $(HasNode) — which only DetectNode sets. Depending on it transitively means it
+    never runs and node always looks absent.
+  -->
+  <Target Name="BuildClientApp"
+          DependsOnTargets="DetectNode;RestoreClientApp"
+          BeforeTargets="AssignTargetPaths"
+          Condition="'$(SkipClientBuild)' != 'true'"
+          Inputs="@(ClientAppInput)"
+          Outputs="$(ClientBuildStamp)">
+    <Warning Condition="'$(HasNode)' != 'true' AND Exists('$(MSBuildProjectDirectory)\wwwroot\index.html')"
+             Code="LLENS001"
+             Text="node was not found, so the client app was not rebuilt. Serving the committed wwwroot output. Install Node.js to pick up changes under ClientApp/." />
+
+    <Error Condition="'$(HasNode)' != 'true' AND !Exists('$(MSBuildProjectDirectory)\wwwroot\index.html')"
+           Code="LLENS002"
+           Text="node was not found and wwwroot has no built client. Install Node.js, or restore wwwroot from source control." />
+
+    <Message Condition="'$(HasNode)' == 'true'" Importance="high" Text="LogLens: building the client app…" />
+    <Exec Condition="'$(HasNode)' == 'true'" Command="npm run build" WorkingDirectory="$(ClientAppDir)" />
+    <Touch Condition="'$(HasNode)' == 'true'" Files="$(ClientBuildStamp)" AlwaysCreate="true" />
+
+    <!-- Re-glob after Vite has written wwwroot, or this build copies the previous bundle. -->
+    <ItemGroup Condition="'$(HasNode)' == 'true'">
+      <Content Remove="wwwroot\**" />
+      <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+</Project>

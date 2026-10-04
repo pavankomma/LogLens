@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.0</TargetFrameworks>
+    <RootNamespace>LogLens</RootNamespace>
+    <PackageId>LogLens.Core</PackageId>
+    <AssemblyName>LogLens</AssemblyName>
+    <Description>A small, fast, dependency-light structured logger for .NET with console, rolling file and async sinks.</Description>
+    <PackageTags>logging;logger;structured;file;console</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" Condition="'$(GITHUB_ACTIONS)' == 'true'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Threading.Channels" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LogLens.Tests" />
+  </ItemGroup>
+</Project>
